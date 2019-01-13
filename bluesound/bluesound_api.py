@@ -55,13 +55,14 @@ class BluesoundApi:
     def __init__(self, ip_address):
         self.baseUrl = "http://" + ip_address + ":11000/"
 
-    def play(self, id=None, seek=None):
+    def play(self, id=None, url=None, seek=None):
         """
         Send Play command to Bluesound player
 
         Arguments:
             No arguments: Continue playing after a pause.
             id: Start playing track id + 1 (id=o, starts track 1 from playlist)
+            url: Play radio station defined by url as returned by getRadioPresets()
             seek: Jumps to seek number of seconds in to current track.
 
         Do have some problem with Spotify
@@ -69,6 +70,8 @@ class BluesoundApi:
         play = self.baseUrl + "Play"
         if id:
             play += ("?id=" + str(id))
+        elif url:
+            play += ("?url=" + str(url))
         elif seek:
             play += ("?seek=" + str(seek))
 
@@ -167,6 +170,42 @@ class BluesoundApi:
             }
         """
         with urllib.request.urlopen(self.baseUrl + "RadioBrowse?service=Capture") as respons:
+            return xmltodict.parse(respons.read())['radiotime']
+
+    def getRadioPresets(self):
+        """
+        Get all Radio Presets.
+
+        Returns:
+            Dictionary radiotime. All values are string
+            The result will vary from which player you have.
+            {
+                ('@service', 'TuneIn'),
+                ('item',
+                    {
+                        ('@URL', 'RadioParadise%3Ahttp%3A%2F%2Fstream-tx3.radioparadise.com%2Faac-320'),
+                        ('@image', '/images/ParadiseRadioIcon.png'),
+                        ('@serviceType', 'CloudService'),
+                        ('@text', 'Radio Paradise'),
+                        ('@type', 'audio')
+                    },
+                    {
+                        ('@URL', 'Capture%3Aspotify%3Aplay'),
+                        ('@image', '/images/SpotifyIcon.png'),
+                        ('@serviceType', 'CloudService'),
+                        ('@text', 'Spotify'),
+                        ('@type', 'audio')
+                    },
+                    {
+                        ('@URL', 'Capture%3Abluez%3Abluetooth'),
+                        ('@image', '/images/BluetoothIcon.png'),
+                        ('@text', 'Bluetooth'),
+                        ('@type', 'audio')
+                    }
+                )
+            }
+        """
+        with urllib.request.urlopen(self.baseUrl + "RadioPresets") as respons:
             return xmltodict.parse(respons.read())['radiotime']
 
     def getSyncStatus(self):
