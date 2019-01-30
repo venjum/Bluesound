@@ -175,6 +175,7 @@ class BluesoundApi:
     def getRadioPresets(self):
         """
         Get all Radio Presets.
+        These are the radio stations that have been marked as favourites.
 
         Returns:
             Dictionary radiotime. All values are string
@@ -183,30 +184,148 @@ class BluesoundApi:
                 ('@service', 'TuneIn'),
                 ('item',
                     {
-                        ('@URL', 'RadioParadise%3Ahttp%3A%2F%2Fstream-tx3.radioparadise.com%2Faac-320'),
-                        ('@image', '/images/ParadiseRadioIcon.png'),
-                        ('@serviceType', 'CloudService'),
-                        ('@text', 'Radio Paradise'),
+                        ('@URL', 'TuneIn%3As24860%2Fhttp%3A%2F%2Fopml.radiotime.com%2FTune.ashx%3Fid%3Ds24860%26formats%3Dwma%2Cmp3%2Caac%2Cogg%2Chls%26partnerId%3D8OeGua6y%26serial%3DC0%3AC1%3AC0%3AE8%3AD6%3A48'),
+                        ('@guide_id', 's24860'),
+                        ('@item', 'station'),
+                        ('@image', 'http://cdn-profiles.tunein.com/s24860/images/logoq.png'),
+                        ('@preset_id', 's24860'),
+                        ('@subtext', 'Tankevækkende radio'),
+                        ('@text', '90.8 | DR P1 (Nyheder)'),
+                        ('@is_preset', 'true'),
                         ('@type', 'audio')
                     },
                     {
-                        ('@URL', 'Capture%3Aspotify%3Aplay'),
-                        ('@image', '/images/SpotifyIcon.png'),
-                        ('@serviceType', 'CloudService'),
-                        ('@text', 'Spotify'),
+                        ('@URL', 'TuneIn%3As248430%2Fhttp%3A%2F%2Fopml.radiotime.com%2FTune.ashx%3Fid%3Ds248430%26formats%3Dwma%2Cmp3%2Caac%2Cogg%2Chls%26partnerId%3D8OeGua6y%26serial%3DC0%3AC1%3AC0%3AE8%3AD6%3A48'),
+                        ('@guide_id', 's248430'),
+                        ('@item', 'station'),
+                        ('@preset_id', 's248430'),
+                        ('@image', 'http://cdn-profiles.tunein.com/s248430/images/logoq.jpg'),
+                        ('@current_track', 'Jazz'),
+                        ('@subtext', 'Jazz'),
+                        ('@text', 'Radio Jazz Copenhagen (Jazz)'),
+                        ('@is_preset', 'true'),
                         ('@type', 'audio')
                     },
                     {
-                        ('@URL', 'Capture%3Abluez%3Abluetooth'),
-                        ('@image', '/images/BluetoothIcon.png'),
-                        ('@text', 'Bluetooth'),
+                        ('@URL', 'TuneIn%3As148845%2Fhttp%3A%2F%2Fopml.radiotime.com%2FTune.ashx%3Fid%3Ds148845%26formats%3Dwma%2Cmp3%2Caac%2Cogg%2Chls%26partnerId%3D8OeGua6y%26serial%3DC0%3AC1%3AC0%3AE8%3AD6%3A48'),
+                        ('@guide_id', 's148845'),
+                        ('@item', 'station'),
+                        ('@preset_id', 's148845'),
+                        ('@image', 'http://cdn-profiles.tunein.com/s148845/images/logoq.png?t=1'),
+                        ('@current_track', 'AK 24syv'),
+                        ('@subtext', 'AK 24syv'),
+                        ('@text', '102.3 | Radio24syv (Talt)'),
+                        ('@is_preset', 'true'),
                         ('@type', 'audio')
                     }
                 )
             }
+
         """
         with urllib.request.urlopen(self.baseUrl + "RadioPresets") as respons:
             return xmltodict.parse(respons.read())['radiotime']
+
+    def getPlaylists(self):
+        """
+        Get a list of playlists.
+
+        The response from the device includes a '#text' field, which is copied
+        to a '@text' field to make it more consistent with the return data from
+        getInputs() and getRadioPresets().
+
+        Returns:
+            Dictionary of playlists:
+            {
+                ('@service', 'LocalMusic'),
+                ('name',
+                    {
+                        ('@image', '/Artwork?service=LocalMusic&fn=%2Fvar%2Fmnt%2FLILLESKY-music%2FJohansson%2C%20Jan%2FFolkvisor%2F08%20Berg-Kirstis%20Polska.m4a'),
+                        ('#text', 'Easy listening'),
+                        ('@text', 'Easy listening')
+                    },
+                    {
+                        ('@image', '/Artwork?service=LocalMusic&fn=%2Fvar%2Fmnt%2FLILLESKY-music%2FCompilations%2FThat%20Christmas%20Feeling_%2021%20Vintage%20Seasonal%20Hits%20%281932-1950%29%2F20%20Have%20Yourself%20A%20Merry%20Little%20Christmas.m4a'),
+                        ('#text', 'Party time'),
+                        ('@text', 'Party time')
+                    }
+                )
+            }
+
+        """
+        with urllib.request.urlopen(self.baseUrl + "Playlists") as respons:
+            playlists = xmltodict.parse(respons.read())['playlists']
+            # Align the response with the format of the other methods:
+            # Copy key '#text' to '@text'.
+            for playlist in playlists['name']:
+                playlist['@text'] = playlist['#text']
+            return playlists
+
+    def getQueue(self, end=100, start=0):
+        """
+        Get a list of songs in the queue. By default, the first 100 songs are
+        fetched (or less, if the queue is shorter).
+        Use the end and start arguments to change this.
+
+        The response from the device includes a '@title' field, which is copied
+        to a '@text' field to make it more consistent with the return data from
+        getInputs() and getRadioPresets().
+
+        Optional arguments:
+            end:   Integer. The subscript in the queue marking the end of the desired subset
+            start: Integer. The subscript in the queue marking the start of the desired subset
+
+        Returns:
+        Dictionary of songs:
+            {
+                ('@modified', '1'),
+                ('@length', '2'),
+                ('@id', '1528'),
+                ('song',
+                    {
+                        ('@service', 'LocalMusic'),
+                        ('@songid', '339'),
+                        ('@id', '0'),
+                        ('title', 'Always On My Mind'),
+                        ('art', 'Chawes, Benni'),
+                        ('alb', 'Up Close'),
+                        ('fn', '/var/mnt/LILLESKY-music/Chawes, Benni/Up Close/08 Always On My Mind.m4a'),
+                        ('quality', '176464'),
+                        ('@text', 'Always On My Mind')])
+                    },
+                    {
+                        ('@service', 'LocalMusic'),
+                        ('@songid', '7505'),
+                        ('@id', '1'),
+                        ('title', 'The Girl From Ipanema'),
+                        ('art', 'Getz, Stan & João Gilberto'),
+                        ('alb', 'Getz/Gilberto'),
+                        ('fn', '/var/mnt/LILLESKY-music/Getz & Gilberto/Getz_Gilberto/01 The Girl From Ipanema.m4a'),
+                        ('quality', '329256'),
+                        ('@text', 'The Girl From Ipanema')])
+                    }
+                )
+            }
+        """
+        url = "{}Playlist?end={}&start={}".format(self.baseUrl, end, start)
+        with urllib.request.urlopen(url) as respons:
+            queue = xmltodict.parse(respons.read())['playlist']
+            # Align the response with the format of the other methods:
+            # Copy key '@title' to '@text'.
+            for song in queue['song']:
+                song['@text'] = song['title']
+            return queue
+
+    def queuePlaylist(self, name):
+        """
+        Add a predefined playlist to the queue and start playing it.
+        The playlist is identified by it's name, which can be found as the
+        '@text' attribute in the return data from getPlaylists()).
+
+        Arguments:
+            name: String. The name of the predefined playlist to put on the queue
+        """
+        url = self.baseUrl + "Add?playlist=" + name + "&playnow=1&service=LocalMusic"
+        urllib.request.urlopen(url)
 
     def getSyncStatus(self):
         """
